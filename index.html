@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Class Manager Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Mobile app feel */
+        body { -webkit-tap-highlight-color: transparent; }
+        
+        /* Toggle Switch CSS */
+        .toggle-checkbox:checked { right: 0; border-color: #4F46E5; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #4F46E5; }
+        .toggle-checkbox:disabled + .toggle-label { background-color: #e5e7eb; cursor: not-allowed; }
+        
+        /* Print Styles for Receipt */
+        @media print {
+            body * { visibility: hidden; }
+            #receipt-modal, #receipt-modal * { visibility: visible; }
+            #receipt-modal { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0; background: white; z-index: 9999; }
+            .no-print { display: none !important; }
+        }
+        
+        /* Hide scrollbar for clean app look */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body class="bg-gray-200 text-gray-800 font-sans h-screen flex justify-center">
+
+    <!-- Mobile App Container -->
+    <div class="w-full max-w-md bg-slate-50 h-full flex flex-col relative shadow-2xl overflow-hidden">
+        
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200 px-4 py-4 z-10 no-print flex justify-between items-center">
+            <div>
+                <h1 id="header-title" class="text-xl font-bold text-gray-900">Dashboard</h1>
+                <p id="header-subtitle" class="text-xs text-gray-500">Admin Panel</p>
+            </div>
+            <div class="bg-indigo-100 text-indigo-700 p-2 rounded-full shadow-inner">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        </header>
+
+        <!-- Main Scrollable Content -->
+        <main class="flex-1 overflow-y-auto pb-20 no-print">
+            
+            <!-- ================= DASHBOARD VIEW ================= -->
+            <section id="view-dashboard" class="p-4 space-y-4 block animate-in fade-in">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-indigo-600 text-white p-4 rounded-2xl shadow-sm">
+                        <p class="text-indigo-100 text-xs font-medium uppercase tracking-wider mb-1">Total Fees Due</p>
+                        <h2 id="dash-fee-due" class="text-2xl font-bold">₹0</h2>
+                    </div>
+                    <div class="bg-red-500 text-white p-4 rounded-2xl shadow-sm">
+                        <p class="text-red-100 text-xs font-medium uppercase tracking-wider mb-1">Total Food Dues</p>
+                        <h2 id="dash-food-due" class="text-2xl font-bold">₹0</h2>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wider">Quick Actions</h3>
+                    <div class="space-y-2">
+                        <button onclick="switchTab('food')" class="w-full flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <span class="flex items-center gap-3 font-medium text-gray-700">
+                                <span class="bg-blue-100 text-blue-600 p-2 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></span>
+                                Mark Weekly Food Orders
+                            </span>
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                        <button onclick="switchTab('fees')" class="w-full flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <span class="flex items-center gap-3 font-medium text-gray-700">
+                                <span class="bg-green-100 text-green-600 p-2 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>
+                                Collect Admission Fees
+                            </span>
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= FOOD BOOKING VIEW ================= -->
+            <section id="view-food" class="hidden p-4 space-y-4 animate-in fade-in">
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 sticky top-0 z-10">
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Select Week (Tuesday)</label>
+                    <select id="food-week-select" class="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-gray-800"></select>
+                </div>
+                
+                <div id="food-list" class="space-y-4 pb-4">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- ================= FEES VIEW ================= -->
+            <section id="view-fees" class="hidden p-4 space-y-4 animate-in fade-in">
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-4">
+                    <p class="text-sm text-indigo-800 font-medium">Total Course Fee: <strong>₹1000</strong></p>
+                    <p class="text-xs text-indigo-600 mt-1">Enter the amount paid to auto-calculate the balance.</p>
+                </div>
+                
+                <div id="fees-list" class="space-y-3 pb-4">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- ================= PROFILES VIEW ================= -->
+            <section id="view-profiles" class="hidden p-4 space-y-4 animate-in fade-in">
+                <div class="relative">
+                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="text" id="profile-search" oninput="renderProfiles()" placeholder="Search by Name or ID..." class="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                
+                <div id="profiles-list" class="space-y-3 pb-4">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+            
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="absolute bottom-0 w-full bg-white border-t border-gray-200 pb-safe no-print z-20">
+            <div class="flex justify-around items-center h-16">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center justify-center w-full h-full text-indigo-600">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    <span class="text-[10px] font-medium">Home</span>
+                </button>
+                <button onclick="switchTab('food')" id="nav-food" class="flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-gray-900 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    <span class="text-[10px] font-medium">Food</span>
+                </button>
+                <button onclick="switchTab('fees')" id="nav-fees" class="flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-gray-900 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="text-[10px] font-medium">Fees</span>
+                </button>
+                <button onclick="switchTab('profiles')" id="nav-profiles" class="flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-gray-900 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <span class="text-[10px] font-medium">Profiles</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- ================= FULL SCREEN OVERLAYS ================= -->
+        
+        <!-- Profile Detail Overlay -->
+        <div id="profile-modal" class="hidden absolute inset-0 bg-gray-50 z-50 flex flex-col no-print">
+            <header class="bg-white shadow-sm border-b border-gray-200 px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="closeProfile()" class="text-gray-600 bg-gray-100 p-2 rounded-full"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                    <h2 class="text-lg font-bold text-gray-900">Member Profile</h2>
+                </div>
+                <div id="profile-action-container">
+                    <!-- Edit Button Injected Here -->
+                </div>
+            </header>
+            
+            <div id="profile-modal-content" class="flex-1 overflow-y-auto p-4 space-y-6 pb-20">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Receipt Modal Overlay -->
+        <div id="receipt-modal" class="hidden absolute inset-0 z-[60] bg-black/80 flex items-center justify-center p-4">
+            <div class="bg-white w-full rounded-lg shadow-2xl overflow-hidden flex flex-col relative max-h-full">
+                <!-- Modal Header -->
+                <div class="p-3 bg-gray-800 text-white flex justify-between items-center no-print">
+                    <h3 class="font-bold text-sm">Admission Receipt</h3>
+                    <button onclick="closeReceipt()" class="text-gray-300 hover:text-white p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                </div>
+                
+                <!-- Printable Receipt -->
+                <div id="printable-receipt" class="p-6 bg-white text-gray-800 border-4 border-double border-gray-200 m-2 relative overflow-y-auto">
+                    <div class="text-center border-b border-dashed border-gray-300 pb-3 mb-4">
+                        <h2 class="text-xl font-bold uppercase tracking-wider text-gray-900">Official Receipt</h2>
+                        <p class="text-xs text-gray-500 mt-1">Admission Fees</p>
+                        <p class="text-xs text-gray-400 mt-1" id="receipt-date"></p>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-end border-b border-gray-100 pb-1">
+                            <span class="text-gray-500 text-xs">Student ID:</span>
+                            <span id="receipt-id" class="font-bold text-sm text-gray-900"></span>
+                        </div>
+                        <div class="flex justify-between items-end border-b border-gray-100 pb-1">
+                            <span class="text-gray-500 text-xs">Received From:</span>
+                            <span id="receipt-name" class="font-bold text-sm text-gray-900"></span>
+                        </div>
+                        <div class="flex justify-between items-end border-b border-gray-100 pb-1">
+                            <span class="text-gray-500 text-xs">Total Fee:</span>
+                            <span class="font-bold text-sm text-gray-700">₹1000</span>
+                        </div>
+                        <div class="flex justify-between items-end border-b border-gray-100 pb-1 bg-green-50 p-1 rounded">
+                            <span class="text-green-800 text-xs font-semibold">Amount Paid:</span>
+                            <span id="receipt-paid" class="font-bold text-base text-green-700"></span>
+                        </div>
+                        <div class="flex justify-between items-end pb-1 bg-red-50 p-1 rounded">
+                            <span class="text-red-800 text-xs font-semibold">Balance Due:</span>
+                            <span id="receipt-balance" class="font-bold text-sm text-red-600"></span>
+                        </div>
+                    </div>
+                    <div class="mt-8 text-center">
+                        <div class="w-24 border-b border-gray-800 mx-auto mb-1"></div>
+                        <p class="text-[10px] text-gray-500">Authorized Signature</p>
+                    </div>
+                </div>
+                
+                <!-- Footer Buttons -->
+                <div class="p-3 bg-gray-50 border-t border-gray-200 flex justify-end gap-2 no-print">
+                    <button onclick="closeReceipt()" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium">Cancel</button>
+                    <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+        // --- CONSTANTS ---
+        const FOOD_COST = 60;
+        const TOTAL_FEE = 1000;
+        const NUM_PEOPLE = 15;
+
+        // --- STATE ---
+        const state = {
+            activeTab: 'dashboard',
+            users: [], // Will be loaded from cloud
+            weeks: [], 
+            selectedWeek: '',
+            foodRecords: {} // Will be loaded from cloud
+        };
+
+        let isCloudLoaded = false;
+
+        // --- YOUR FIREBASE SETUP ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsHmiQU0-ka9iXIrpLelxSKengRKSUhMQ",
+            authDomain: "leader-de6f6.firebaseapp.com",
+            projectId: "leader-de6f6",
+            storageBucket: "leader-de6f6.firebasestorage.app",
+            messagingSenderId: "9750707872",
+            appId: "1:9750707872:web:4677977a4167606f4d93c5",
+            measurementId: "G-2676NXXGDM"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Custom document path for your personal database
+        const docRef = doc(db, 'classManager', 'mainState');
+
+        // --- INITIALIZATION ---
+        async function initApp() {
+            generateTuesdays();
+            setupEventListeners();
+            
+            // 1. Authenticate Anonymously with your Firebase project
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Auth Error: Please ensure 'Anonymous' sign-in is enabled in your Firebase Console.", error);
+            }
+
+            // 2. Fetch and Sync Data after Auth
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) return;
+                
+                try {
+                    const snap = await getDoc(docRef);
+                    if (!snap.exists()) {
+                        // Create initial default data in cloud if it's the very first time
+                        const defaultUsers = Array.from({ length: NUM_PEOPLE }, (_, i) => ({
+                            uid: `ID-${101 + i}`,
+                            name: `Member ${i + 1}`,
+                            mobile: '',
+                            admissionPaid: 0
+                        }));
+                        const defaultFoodRecords = {};
+                        state.weeks.forEach(w => defaultFoodRecords[w.value] = {});
+                        await setDoc(docRef, { users: defaultUsers, foodRecords: defaultFoodRecords });
+                    }
+
+                    // Listen for real-time cloud changes
+                    onSnapshot(docRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            state.users = data.users || [];
+                            state.foodRecords = data.foodRecords || {};
+                            
+                            // Ensure any future weeks generated locally are added to the cloud state
+                            let needsCloudUpdate = false;
+                            state.weeks.forEach(w => {
+                                if (!state.foodRecords[w.value]) {
+                                    state.foodRecords[w.value] = {};
+                                    needsCloudUpdate = true;
+                                }
+                            });
+                            
+                            isCloudLoaded = true;
+                            renderAll();
+                            
+                            if (needsCloudUpdate) saveToCloud();
+                        }
+                    }, (error) => {
+                        console.error("Sync Error:", error);
+                    });
+
+                } catch (e) {
+                    console.error("Initialization Error:", e);
+                }
+            });
+        }
+
+        // --- CLOUD SAVER ---
+        async function saveToCloud() {
+            if (!isCloudLoaded) return;
+            try {
+                await setDoc(docRef, { users: state.users, foodRecords: state.foodRecords }, { merge: true });
+            } catch (e) {
+                console.error("Error saving data:", e);
+            }
+        }
+
+        // Generate 1 year of Tuesdays from current month
+        function generateTuesdays() {
+            const today = new Date();
+            let current = new Date(today.getFullYear(), today.getMonth(), 1);
+            const endDate = new Date(current.getFullYear() + 1, current.getMonth(), 0);
+            
+            while (current <= endDate) {
+                if (current.getDay() === 2) { // Tuesday
+                    const y = current.getFullYear();
+                    const m = String(current.getMonth() + 1).padStart(2, '0');
+                    const d = String(current.getDate()).padStart(2, '0');
+                    
+                    const dateStr = `${y}-${m}-${d}`;
+                    const displayStr = current.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                    
+                    state.weeks.push({ value: dateStr, display: displayStr });
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            if(state.weeks.length > 0) state.selectedWeek = state.weeks[0].value;
+            
+            // Populate Week Selector
+            const weekSelect = document.getElementById('food-week-select');
+            weekSelect.innerHTML = state.weeks.map(w => `<option value="${w.value}">${w.display}</option>`).join('');
+            weekSelect.value = state.selectedWeek;
+        }
+
+        // --- NAVIGATION ---
+        window.switchTab = function(tabId) {
+            state.activeTab = tabId;
+            const tabs = ['dashboard', 'food', 'fees', 'profiles'];
+            
+            const titles = { dashboard: 'Dashboard', food: 'Food Booking', fees: 'Admission Fees', profiles: 'Member Profiles' };
+            document.getElementById('header-title').innerText = titles[tabId];
+
+            tabs.forEach(tab => {
+                const section = document.getElementById(`view-${tab}`);
+                if (tab === tabId) {
+                    section.classList.remove('hidden'); section.classList.add('block');
+                } else {
+                    section.classList.add('hidden'); section.classList.remove('block');
+                }
+                
+                const navBtn = document.getElementById(`nav-${tab}`);
+                if (tab === tabId) {
+                    navBtn.classList.remove('text-gray-500'); navBtn.classList.add('text-indigo-600');
+                } else {
+                    navBtn.classList.remove('text-indigo-600'); navBtn.classList.add('text-gray-500');
+                }
+            });
+
+            if (isCloudLoaded) renderAll();
+        }
+
+        function renderAll() {
+            if (state.activeTab === 'dashboard') renderDashboard();
+            if (state.activeTab === 'food') renderFoodView();
+            if (state.activeTab === 'fees') renderFeesView();
+            if (state.activeTab === 'profiles') renderProfiles();
+        }
+
+        // --- DASHBOARD CALCULATIONS ---
+        function calculateTotals() {
+            let totalAdmissionDue = 0;
+            let totalFoodDue = 0;
+
+            state.users.forEach(user => {
+                totalAdmissionDue += (TOTAL_FEE - user.admissionPaid);
+                Object.values(state.foodRecords).forEach(weekData => {
+                    const record = weekData[user.uid];
+                    if (record && record.eating && !record.paid) {
+                        totalFoodDue += FOOD_COST;
+                    }
+                });
+            });
+
+            return { totalAdmissionDue, totalFoodDue };
+        }
+
+        function renderDashboard() {
+            const totals = calculateTotals();
+            document.getElementById('dash-fee-due').innerText = `₹${totals.totalAdmissionDue}`;
+            document.getElementById('dash-food-due').innerText = `₹${totals.totalFoodDue}`;
+        }
+
+        // --- PAST DUES CALCULATION ---
+        function getPastDuesForWeek(uid, currentWeekValue) {
+            let pastDueAmount = 0;
+            let pastDueDates = [];
+
+            state.weeks.forEach(week => {
+                if (week.value < currentWeekValue) {
+                    const record = state.foodRecords[week.value]?.[uid];
+                    if (record && record.eating && !record.paid) {
+                        pastDueAmount += FOOD_COST;
+                        pastDueDates.push(week.display);
+                    }
+                }
+            });
+
+            return { pastDueAmount, pastDueDates };
+        }
+
+        // --- FOOD VIEW ---
+        function renderFoodView() {
+            const container = document.getElementById('food-list');
+            container.innerHTML = '';
+            
+            const currentWeekData = state.foodRecords[state.selectedWeek] || {};
+
+            state.users.forEach(user => {
+                const record = currentWeekData[user.uid] || { eating: false, paid: false };
+                const pastDues = getPastDuesForWeek(user.uid, state.selectedWeek);
+                
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border ${record.eating ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'} shadow-sm transition-colors`;
+                
+                let pastDuesHtml = '';
+                if (pastDues.pastDueAmount > 0) {
+                    pastDuesHtml = `
+                        <div class="bg-red-50 border border-red-200 p-2 rounded-lg mb-3 flex items-start gap-2 shadow-sm">
+                            <svg class="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center">
+                                    <p class="text-xs font-bold text-red-800">Previous Dues: ₹${pastDues.pastDueAmount}</p>
+                                    <div class="flex gap-2 items-center">
+                                        <button onclick="payAllPastDues('${user.uid}', '${state.selectedWeek}')" class="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded font-bold shadow-sm hover:bg-green-600 active:scale-95 transition-all">Pay All</button>
+                                        <button onclick="switchTab('profiles'); setTimeout(() => openProfileModal('${user.uid}'), 100)" class="text-[10px] text-red-600 underline font-medium">Dates</button>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-red-500 leading-tight mt-1 truncate max-w-[200px]">${pastDues.pastDueDates.join(', ')}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">${user.uid}</span>
+                            <h4 class="font-bold text-gray-900 mt-1">${user.name}</h4>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-medium ${record.eating ? (record.paid ? 'text-green-600' : 'text-red-500') : 'text-gray-400'}">
+                                ${record.eating ? (record.paid ? 'Current: Paid ₹60' : 'Current: Due ₹60') : 'Current: No Meal'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    ${pastDuesHtml}
+                    
+                    <div class="flex items-center justify-between gap-4 border-t border-gray-100 pt-3">
+                        <div class="flex items-center justify-between w-full">
+                            <label class="text-sm font-medium text-gray-700">Needs Meal?</label>
+                            <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" id="eat-${user.uid}" ${record.eating ? 'checked' : ''} onchange="toggleEating('${user.uid}', this.checked)" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10"/>
+                                <label for="eat-${user.uid}" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between w-full border-l border-gray-200 pl-4 ${!record.eating ? 'opacity-50' : ''}">
+                            <label class="text-sm font-medium text-gray-700">Paid ₹60?</label>
+                            <div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" id="pay-${user.uid}" ${record.paid ? 'checked' : ''} ${!record.eating ? 'disabled' : ''} onchange="togglePaid('${user.uid}', this.checked)" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10"/>
+                                <label for="pay-${user.uid}" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.toggleEating = function(uid, isEating) {
+            if (!state.foodRecords[state.selectedWeek][uid]) {
+                state.foodRecords[state.selectedWeek][uid] = { eating: false, paid: false };
+            }
+            state.foodRecords[state.selectedWeek][uid].eating = isEating;
+            if (!isEating) state.foodRecords[state.selectedWeek][uid].paid = false; 
+            renderAll();
+            saveToCloud();
+        }
+
+        window.togglePaid = function(uid, isPaid) {
+            if (state.foodRecords[state.selectedWeek][uid]) {
+                state.foodRecords[state.selectedWeek][uid].paid = isPaid;
+                renderAll();
+                saveToCloud();
+            }
+        }
+
+        window.payPastDue = function(uid, dateValue) {
+            if (state.foodRecords[dateValue] && state.foodRecords[dateValue][uid]) {
+                state.foodRecords[dateValue][uid].paid = true;
+                openProfileModal(uid); // Refresh modal
+                saveToCloud();
+            }
+        }
+
+        window.payAllPastDues = function(uid, currentWeekValue) {
+            state.weeks.forEach(week => {
+                if (week.value < currentWeekValue) {
+                    const record = state.foodRecords[week.value]?.[uid];
+                    if (record && record.eating && !record.paid) {
+                        state.foodRecords[week.value][uid].paid = true;
+                    }
+                }
+            });
+            renderAll();
+            saveToCloud();
+        }
+
+        // --- FEES VIEW ---
+        function renderFeesView() {
+            const container = document.getElementById('fees-list');
+            container.innerHTML = '';
+            
+            state.users.forEach(user => {
+                const balance = TOTAL_FEE - user.admissionPaid;
+                
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3";
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">${user.uid}</span>
+                            <input type="text" value="${user.name}" onchange="updateName('${user.uid}', this.value)" class="font-bold text-gray-900 block w-full mt-1 border-b border-transparent focus:border-indigo-500 outline-none bg-transparent" placeholder="Member Name">
+                        </div>
+                        <div class="text-right flex flex-col items-end">
+                            <span class="text-xs text-gray-500">Balance</span>
+                            <span class="font-bold ${balance > 0 ? 'text-red-500' : 'text-green-600'}">₹${balance}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 items-center">
+                        <div class="flex-1 relative">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">₹</span>
+                            <input type="number" min="0" max="${TOTAL_FEE}" value="${user.admissionPaid || ''}" onchange="updateFee('${user.uid}', this.value)" placeholder="Paid Amount" class="w-full pl-7 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium">
+                        </div>
+                        <button onclick="openReceipt('${user.uid}')" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-200 transition flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Receipt
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.updateName = function(uid, newName) {
+            const user = state.users.find(u => u.uid === uid);
+            if(user) {
+                user.name = newName;
+                saveToCloud();
+            }
+        }
+
+        window.updateFee = function(uid, amount) {
+            const user = state.users.find(u => u.uid === uid);
+            if(user) {
+                let val = parseInt(amount) || 0;
+                if(val > TOTAL_FEE) val = TOTAL_FEE;
+                if(val < 0) val = 0;
+                user.admissionPaid = val;
+                renderAll();
+                saveToCloud();
+            }
+        }
+
+        window.openReceipt = function(uid) {
+            const user = state.users.find(u => u.uid === uid);
+            if (!user) return;
+            const balance = TOTAL_FEE - user.admissionPaid;
+            const dateStr = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+
+            document.getElementById('receipt-id').textContent = user.uid;
+            document.getElementById('receipt-name').textContent = user.name;
+            document.getElementById('receipt-paid').textContent = `₹${user.admissionPaid}`;
+            document.getElementById('receipt-balance').textContent = `₹${balance}`;
+            document.getElementById('receipt-date').textContent = `Date: ${dateStr}`;
+            
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        window.closeReceipt = function() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        }
+
+        // --- PROFILES VIEW ---
+        window.renderProfiles = function() {
+            const container = document.getElementById('profiles-list');
+            const searchQ = document.getElementById('profile-search').value.toLowerCase();
+            container.innerHTML = '';
+            
+            const filtered = state.users.filter(u => u.name.toLowerCase().includes(searchQ) || u.uid.toLowerCase().includes(searchQ));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 mt-4 text-sm">No profiles found.</p>`;
+                return;
+            }
+
+            filtered.forEach(user => {
+                const card = document.createElement('button');
+                card.onclick = () => openProfileModal(user.uid);
+                card.className = "w-full bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between hover:bg-gray-50 transition text-left";
+                
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                            ${user.name.charAt(0)}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900">${user.name}</h4>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-xs font-medium text-gray-500">${user.uid}</span>
+                                ${user.mobile ? `<span class="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">${user.mobile}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.openProfileModal = function(uid, isEditMode = false) {
+            const user = state.users.find(u => u.uid === uid);
+            if (!user) return;
+            
+            const content = document.getElementById('profile-modal-content');
+            const actionContainer = document.getElementById('profile-action-container');
+
+            if (isEditMode) {
+                // --- EDIT MODE VIEW ---
+                actionContainer.innerHTML = `<button onclick="openProfileModal('${uid}', false)" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg active:scale-95 transition-transform">Cancel</button>`;
+                
+                content.innerHTML = `
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                        <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            Edit Profile Details
+                        </h3>
+                        
+                        <div id="profile-error" class="hidden text-xs font-bold text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 mb-2"></div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Full Name</label>
+                            <input type="text" id="edit-name" value="${user.name}" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-gray-900">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Student ID (Must be Unique)</label>
+                            <input type="text" id="edit-uid" value="${user.uid}" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-gray-900">
+                            <p class="text-[10px] text-orange-600 mt-1.5 font-medium flex items-start gap-1 leading-tight">
+                                <svg class="w-3 h-3 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                Changing this ID will safely transfer all past food payments and dues to the new ID.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Mobile Number</label>
+                            <input type="tel" id="edit-mobile" value="${user.mobile || ''}" placeholder="e.g. 9876543210" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-gray-900">
+                        </div>
+                        
+                        <button onclick="saveProfile('${uid}')" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl mt-6 shadow-sm hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Save Changes
+                        </button>
+                    </div>
+                `;
+            } else {
+                // --- NORMAL READ-ONLY VIEW ---
+                actionContainer.innerHTML = `<button onclick="openProfileModal('${uid}', true)" class="text-gray-600 bg-gray-100 p-2 rounded-full hover:bg-gray-200 active:scale-95 transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>`;
+
+                const unpaidWeeks = [];
+                let totalFoodDue = 0;
+                
+                Object.keys(state.foodRecords).forEach(date => {
+                    const rec = state.foodRecords[date][uid];
+                    if (rec && rec.eating && !rec.paid) {
+                        const displayDate = state.weeks.find(w => w.value === date)?.display || date;
+                        unpaidWeeks.push({ value: date, display: displayDate });
+                        totalFoodDue += FOOD_COST;
+                    }
+                });
+
+                const feeBal = TOTAL_FEE - user.admissionPaid;
+                const feePercent = Math.round((user.admissionPaid / TOTAL_FEE) * 100);
+
+                let foodDuesHtml = `<div class="bg-gray-50 p-4 rounded-xl text-center text-sm text-gray-500">No pending food dues. All clear!</div>`;
+                if (unpaidWeeks.length > 0) {
+                    foodDuesHtml = `<div class="bg-red-50 border border-red-100 rounded-xl overflow-hidden">
+                        ${unpaidWeeks.map(due => `
+                            <div class="flex justify-between items-center p-3 border-b border-red-100 last:border-0">
+                                <span class="text-sm font-medium text-red-900">${due.display}</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm font-bold text-red-600">Due ₹60</span>
+                                    <button onclick="payPastDue('${uid}', '${due.value}')" class="bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm hover:bg-green-600 active:scale-95 transition-all">Pay</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>`;
+                }
+
+                content.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-4">
+                        <div class="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-2xl mb-3 shadow-inner">
+                            ${user.name.charAt(0)}
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 text-center">${user.name}</h2>
+                        <div class="flex flex-wrap justify-center gap-2 mt-2">
+                            <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider">${user.uid}</span>
+                            ${user.mobile ? `
+                            <span class="bg-blue-50 border border-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                ${user.mobile}
+                            </span>` : ''}
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wider mb-3">Admission Fee</h3>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-500">Paid: <span class="font-bold text-green-600">₹${user.admissionPaid}</span></span>
+                            <span class="text-gray-500">Due: <span class="font-bold ${feeBal > 0 ? 'text-red-500' : 'text-green-600'}">₹${feeBal}</span></span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-indigo-600 h-2.5 rounded-full" style="width: ${feePercent}%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-end mb-3">
+                            <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wider">Food Dues</h3>
+                            <span class="font-bold text-red-500">Total: ₹${totalFoodDue}</span>
+                        </div>
+                        ${foodDuesHtml}
+                    </div>
+                `;
+            }
+            
+            document.getElementById('profile-modal').classList.remove('hidden');
+        }
+        
+        window.saveProfile = function(oldUid) {
+            const newName = document.getElementById('edit-name').value.trim();
+            const newUid = document.getElementById('edit-uid').value.trim();
+            const newMobile = document.getElementById('edit-mobile').value.trim();
+            const errorEl = document.getElementById('profile-error');
+
+            if (!newName || !newUid) {
+                errorEl.textContent = "Name and Student ID cannot be empty.";
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            // Check if they changed their ID to one that someone else is already using
+            if (newUid !== oldUid && state.users.some(u => u.uid === newUid)) {
+                errorEl.textContent = "This Student ID is already taken by someone else.";
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            const userIndex = state.users.findIndex(u => u.uid === oldUid);
+            if (userIndex !== -1) {
+                // If the ID was changed, we must securely migrate all historical food records
+                if (newUid !== oldUid) {
+                    Object.keys(state.foodRecords).forEach(date => {
+                        if (state.foodRecords[date][oldUid]) {
+                            // Copy data to new ID
+                            state.foodRecords[date][newUid] = { ...state.foodRecords[date][oldUid] };
+                            // Delete data from old ID
+                            delete state.foodRecords[date][oldUid];
+                        }
+                    });
+                }
+
+                // Update the main user object
+                state.users[userIndex].name = newName;
+                state.users[userIndex].uid = newUid;
+                state.users[userIndex].mobile = newMobile;
+
+                saveToCloud();
+                renderAll(); // Updates all background tabs
+                openProfileModal(newUid, false); // Reload modal in standard view mode
+            }
+        }
+
+        window.closeProfile = function() {
+            document.getElementById('profile-modal').classList.add('hidden');
+        }
+
+        function setupEventListeners() {
+            document.getElementById('food-week-select').addEventListener('change', (e) => {
+                state.selectedWeek = e.target.value;
+                if (isCloudLoaded) renderFoodView();
+            });
+        }
+
+        // Boot
+        initApp();
+
+    </script>
+</body>
+</html>

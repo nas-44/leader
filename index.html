@@ -431,22 +431,38 @@
 
         function generateTuesdays() {
             const today = new Date();
-            let current = new Date(today.getFullYear(), today.getMonth(), 1);
-            const endDate = new Date(current.getFullYear() + 1, current.getMonth(), 0);
+            let current = new Date(2026, 5, 1); // June 1, 2026
+            const endDate = new Date(2027, 11, 31); // December 31, 2027
+            
+            let closestWeek = null;
+            let minDiff = Infinity;
             
             while (current <= endDate) {
                 if (current.getDay() === 2) { 
                     const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
                     const displayStr = current.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
                     state.weeks.push({ value: dateStr, display: displayStr });
+                    
+                    const diff = Math.abs(today - current);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestWeek = dateStr;
+                    }
                 }
                 current.setDate(current.getDate() + 1);
             }
-            if(state.weeks.length > 0) state.selectedWeek = state.weeks[0].value;
+            
+            if (closestWeek) {
+                state.selectedWeek = closestWeek;
+            } else if (state.weeks.length > 0) {
+                state.selectedWeek = state.weeks[state.weeks.length - 1].value;
+            }
             
             const weekSelect = document.getElementById('food-week-select');
-            weekSelect.innerHTML = state.weeks.map(w => `<option value="${w.value}">${w.display}</option>`).join('');
-            weekSelect.value = state.selectedWeek;
+            if (weekSelect) {
+                weekSelect.innerHTML = state.weeks.map(w => `<option value="${w.value}">${w.display}</option>`).join('');
+                weekSelect.value = state.selectedWeek;
+            }
         }
 
         window.switchTab = function(tabId) {
@@ -469,6 +485,32 @@
             });
 
             if (isCloudLoaded) renderAll();
+        }
+
+        window.switchReportTab = function(type) {
+            state.reportTab = type;
+            const btnFood = document.getElementById('tab-rep-food');
+            const btnFees = document.getElementById('tab-rep-fees');
+            const contFood = document.getElementById('report-food-container');
+            const contFees = document.getElementById('report-fees-container');
+
+            if (type === 'food') {
+                btnFood.className = "flex-1 py-2 text-sm font-bold rounded-lg bg-white text-purple-700 shadow-sm transition-all";
+                btnFees.className = "flex-1 py-2 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-900 transition-all";
+                contFood.classList.remove('hidden');
+                contFood.classList.add('block');
+                contFees.classList.add('hidden');
+                contFees.classList.remove('block');
+                renderReportsView();
+            } else {
+                btnFees.className = "flex-1 py-2 text-sm font-bold rounded-lg bg-white text-purple-700 shadow-sm transition-all";
+                btnFood.className = "flex-1 py-2 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-900 transition-all";
+                contFees.classList.remove('hidden');
+                contFees.classList.add('block');
+                contFood.classList.add('hidden');
+                contFood.classList.remove('block');
+                renderFeeLedger();
+            }
         }
 
         function renderAll() {
